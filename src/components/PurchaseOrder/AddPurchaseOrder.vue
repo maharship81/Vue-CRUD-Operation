@@ -27,7 +27,7 @@
           type="number"
           class="form-control"
           placeholder="Due Days"
-          v-model="this.PurchaseOrder.DueDays"
+          v-model="this.PurchaseOrder.Due"
           v-on:keyup="DateFormat"
         />
       </div>
@@ -48,7 +48,7 @@
         <input
           type="text"
           class="form-control"
-          v-model="this.PurchaseOrder.CurrencyRate"
+          v-model="this.PurchaseOrder.CurrencyId"
         />
       </div>
     </div>
@@ -226,7 +226,6 @@
                     type="number"
                     class="form-control"
                     v-model="GrossAmt"
-                    id="GrossAmount"
                     placeholder="Gross Amount"
                     readonly
                   />
@@ -274,9 +273,8 @@
                 <div class="col-sm-12" style="margin-top: 10px">
                   <input
                     type="number"
-                    v-model="this.DiscountPer"
+                    v-model="this.PurchaseOrder.DiscPrct"
                     class="form-control"
-                    id="DiscountPer"
                     placeholder="Discount"
                     v-on:keyup="Disc"
                   />
@@ -288,7 +286,6 @@
                     type="numbe"
                     v-model="wholeAmount.discAmount"
                     class="form-control"
-                    id="discount"
                     placeholder="Discount"
                     readonly
                   />
@@ -314,7 +311,6 @@
                     type="number"
                     v-model="wholeAmount.netamount"
                     class="form-control"
-                    id="NetAmount"
                     placeholder="NetAmount"
                     readonly
                   />
@@ -348,11 +344,19 @@ export default {
   data() {
     return {
       PurchaseOrder: {
+        CurrencyId:"",
+        AccountId:"",
         InvoiceNo: "",
         Date: DateFormat,
         DueDate: DateFormat,
-        DueDays: "",
-        CurrencyRate:"",
+        Due: "",
+        NetAmount: "",
+        NetDollar: "",
+        DiscPrct: "",
+        DiscAmount: "",
+        DiscDollar: "",
+        OrderGrossAmount: "",
+        OrderGrossDollar: "",
       },
       PurchaseOrderDetail: {
         SrNo: 1,
@@ -360,6 +364,9 @@ export default {
         Rate: "",
         Qty: "",
         Amount: "",
+        Dollar: "",
+        TotalAmount: "",
+        TotalDollar: "",
       },
       Taxation: {
         SrNo: 1,
@@ -367,11 +374,7 @@ export default {
         TaxPer: "",
         TaxAmount: "",
       },
-      GrossAmount: "",
       Tax: "",
-      DiscountPer: "",
-      Discount: "",
-      NetAmount: "",
       purchaseData: [],
       taxData: [],
       ajaxOptions: [],
@@ -392,8 +395,10 @@ export default {
     GrossAmt() {
       return this.purchaseData.reduce((GrossAmt, item) => {
         let Amount = GrossAmt + item.Amount;
-        this.GrossAmount = Amount;
-        this.NetAmount = Amount;
+        this.PurchaseOrder.OrderGrossAmount = Amount;
+        this.PurchaseOrder.OrderGrossDollar = Amount;
+        this.PurchaseOrder.NetAmount = Amount;
+        this.PurchaseOrder.NetDollar = Amount;
         return Amount;
       }, 0);
     },
@@ -405,8 +410,8 @@ export default {
       }, 0);
     },
     wholeAmount() {
-       let GA = this.GrossAmount;
-      let disc = this.DiscountPer / 100;
+       let GA = this.PurchaseOrder.OrderGrossAmount;
+      let disc = this.PurchaseOrder.DiscPrct / 100;
        let discAmount = GA * disc;
       let netamount =  GA + this.Tax - discAmount;
       
@@ -421,10 +426,10 @@ export default {
   },
   methods: {
     DateFormat() {
-      if(this.PurchaseOrder.DueDays !="")
+      if(this.PurchaseOrder.Due !="")
       {
         let someDate = new Date(this.PurchaseOrder.Date);
-        let DT = someDate.setDate(someDate.getDate() + this.PurchaseOrder.DueDays)
+        let DT = someDate.setDate(someDate.getDate() + this.PurchaseOrder.Due)
         let Formtted_Date = new Date(DT).toJSON().slice(0, 10);
         this.PurchaseOrder.DueDate = Formtted_Date;
       }
@@ -437,6 +442,7 @@ export default {
       let Amt = this.PurchaseOrderDetail.Qty * this.PurchaseOrderDetail.Rate;
       console.warn(Amt);
       this.PurchaseOrderDetail.Amount = Amt;
+      this.PurchaseOrderDetail.Dollar = Amt;
     },
     AddPOD() {
       let PurchaseData = JSON.parse(JSON.stringify(this.PurchaseOrderDetail));
@@ -446,6 +452,7 @@ export default {
         Rate: PurchaseData.Rate,
         Qty: PurchaseData.Qty,
         Amount: PurchaseData.Amount,
+        Dollar: PurchaseData.Amount,
       };
       this.purchaseData.push(ObjPurchase);
       this.PurchaseOrderDetail.SrNo++;
@@ -477,27 +484,29 @@ export default {
       this.taxData.splice(this.taxData.indexOf(event), 1);
     },
     Disc() {
-      let GA = this.GrossAmount;
-      let disc = this.DiscountPer / 100;
+      let GA = this.PurchaseOrder.OrderGrossAmount;
+      let disc = this.PurchaseOrder.DiscPrct / 100;
       console.warn("GrossAmount=>", GA);
       console.warn("Disc=>", disc);
-      let DiscAmount = GA * disc;
-      console.warn("DiscAmount=>", DiscAmount);
-      this.Discount = DiscAmount;
+      let DiscAmt = GA * disc;
+      // this.Discount = DiscAmount;
+      this.PurchaseOrder.DiscAmount = DiscAmt;
+      this.PurchaseOrder.DiscDollar = DiscAmt;
     },
     TaxCal() {
-      let GA = this.GrossAmount;
+      let GA = this.PurchaseOrder.OrderGrossAmount;
       let taxper = this.Taxation.TaxPer;
       let taxcal = (GA * taxper) / 100;
       this.Taxation.TaxAmount = taxcal;
       let netamount = taxcal + GA;
-      this.NetAmount = netamount;
+      this.PurchaseOrder.NetAmount = netamount;
+      this.PurchaseOrder.NetDollar = netamount;
     },
     async ajaxChangeEvent(val) {
       console.log('ajaxChangeEvent = >', val.text);
       let ConRate = await Service.GetAllConversionCurrencyRates(val.text);
       let Rate = ConRate.data;
-      this.PurchaseOrder.CurrencyRate = Rate.conversionCurrencyRates;
+      this.PurchaseOrder.CurrencyId = Rate.conversionCurrencyRates;
       // alert(val);
     },
     ajaxSelectEvent({ text }) {
