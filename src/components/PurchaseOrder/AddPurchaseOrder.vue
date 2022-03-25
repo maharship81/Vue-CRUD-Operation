@@ -1,5 +1,8 @@
 <template>
   <Header />
+  <div class="Header">
+    <button class="btn btn-primary" v-on:click="AddPurchorders"><fa icon="floppy-disk"/> AddPurchaseOrder</button>
+  </div>
   <div class="container-fluid">
     <div class="form-inline PurchaseOrder">
       <h1>Purchase Order</h1>
@@ -40,15 +43,37 @@
         />
       </div>
       <div class="form-group">
-        <div><label>Due Date</label></div>
-          <Select2 v-model="ajaxOptionsSelected" :options="ajaxOptions"  :settings="{ placeholder: 'Specifies the placeholder through settings', ajax: ajax }" @change="ajaxChangeEvent($event)" @select="ajaxChangeEvent($event)" class="Select"/>
+        <div><label>Account</label></div>
+        <Select2
+          v-model="AccountOptionsSelected"
+          :options="AccountOptions"
+          :settings="{
+            placeholder: 'Specifies the placeholder through settings',
+            ajax: Account
+          }"
+          @select="AccountChangeEvent($event)"
+          class="Account"
+        />
+      </div>
+       <div class="form-group">
+        <div><label>Currency</label></div>
+        <Select2
+          v-model="CurrencyptionsSelected"
+          :options="CurrencyOptions"
+          :settings="{
+            placeholder: 'Specifies the placeholder through settings',
+            ajax: Currency
+          }"
+          @select="CurrencyChangeEvent($event)"
+          class="Currency"
+        />
       </div>
       <div class="form-group">
         <div><label>Currency Rate</label></div>
         <input
           type="text"
           class="form-control"
-          v-model="this.PurchaseOrder.CurrencyId"
+          v-model="this.PurchaseOrder.CurrencyCode"
         />
       </div>
     </div>
@@ -103,7 +128,7 @@
         />
       </div>
       <div class="form-group">
-        <button class="AddPOD btn btn-primary" v-on:click="AddPOD">Add</button>
+        <button class="AddPOD btn btn-primary" v-on:click="AddPOD"><fa icon="plus"/></button>
       </div>
       <div>
         <table class="table">
@@ -126,7 +151,7 @@
               <td>{{ item.Amount }}</td>
               <td>
                 <button class="btn btn-danger" v-on:click="RemovePOD(event)">
-                  Delete
+                  <fa icon="trash"/>
                 </button>
               </td>
             </tr>
@@ -155,7 +180,7 @@
                 type="text"
                 class="form-control"
                 placeholder="Tax Name"
-                v-model="this.Taxation.TaxName"
+                v-model="this.Taxation.TaxesName"
               />
             </div>
             <div class="form-group">
@@ -164,7 +189,7 @@
                 type="number"
                 class="form-control"
                 placeholder="Taxes%"
-                v-model="this.Taxation.TaxPer"
+                v-model="this.Taxation.TaxesPrct"
                 v-on:keyup="TaxCal"
               />
             </div>
@@ -174,13 +199,13 @@
                 type="number"
                 class="form-control"
                 placeholder="TaxesAmount"
-                v-model="this.Taxation.TaxAmount"
+                v-model="this.Taxation.TaxesAmount"
                 readonly
               />
             </div>
             <div class="form-group">
               <button class="TaxBtn btn btn-primary" v-on:click="AddTax">
-                Add
+                <fa icon="plus"/>
               </button>
             </div>
             <div>
@@ -197,15 +222,15 @@
                 <tbody>
                   <tr v-for="item in this.taxData" :key="item.SrNo">
                     <td>{{ item.SrNo }}</td>
-                    <td>{{ item.TaxName }}</td>
-                    <td>{{ item.TaxPer }}</td>
-                    <td>{{ item.TaxAmount }}</td>
+                    <td>{{ item.TaxesName }}</td>
+                    <td>{{ item.TaxesPrct }}</td>
+                    <td>{{ item.TaxesAmount }}</td>
                     <td>
                       <button
                         class="btn btn-danger"
                         v-on:click="RemoveTax(index)"
                       >
-                        Delete
+                        <fa icon="trash"/>
                       </button>
                     </td>
                   </tr>
@@ -336,7 +361,7 @@
 <script>
 import Header from "@/Template/Header.vue";
 import Service from "@/EventService/Service.vue";
-import Select2 from 'vue3-select2-component';
+import Select2 from "vue3-select2-component";
 let DateFormat = new Date().toISOString().substr(0, 10);
 export default {
   components: { Header, Select2 },
@@ -344,8 +369,9 @@ export default {
   data() {
     return {
       PurchaseOrder: {
-        CurrencyId:"",
-        AccountId:"",
+        CurrencyId: "",
+        CurrencyCode: "",
+        AccountId: "",
         InvoiceNo: "",
         Date: DateFormat,
         DueDate: DateFormat,
@@ -361,34 +387,48 @@ export default {
       PurchaseOrderDetail: {
         SrNo: 1,
         Name: "",
-        Rate: "",
         Qty: "",
+        Rate: "",
         Amount: "",
         Dollar: "",
-        TotalAmount: "",
-        TotalDollar: "",
       },
       Taxation: {
         SrNo: 1,
-        TaxName: "",
-        TaxPer: "",
-        TaxAmount: "",
+        TaxesName: "",
+        TaxesPrct: "",
+        TaxesAmount: "",
       },
       Tax: "",
       purchaseData: [],
       taxData: [],
-      ajaxOptions: [],
-      ajax: {
-        url: 'https://localhost:44362/Api/v1/BLGD/GetAllCurrency',
+
+      AccountOptions: [],
+      Account: {
+        url: "https://localhost:44362/Api/v1/Login/GetLogin",
         processResults: function (data) {
-          console.warn(data.data);
           // Tranforms the top-level key of the response object from 'items' to 'results'
           return {
-            results: data.data.map(x => {return {id:x.code, text: x.isoCode}})
+            results: data.data.map((x) => {
+              return { id: x.code, text: x.firstName };
+            }),
           };
-        }
+        },
       },
-      ajaxOptionsSelected: null
+      AccountOptionsSelected: null,
+
+      CurrencyOptions: [],
+      Currency: {
+        url: "https://localhost:44362/Api/v1/BLGD/GetAllCurrency",
+        processResults: function (data) {
+          // Tranforms the top-level key of the response object from 'items' to 'results'
+          return {
+            results: data.data.map((x) => {
+              return { id: x.code, text: x.isoCode };
+            }),
+          };
+        },
+      },
+      CurrencyOptionsSelected: null,
     };
   },
   computed: {
@@ -404,43 +444,40 @@ export default {
     },
     TaxAmt() {
       return this.taxData.reduce((TaxAmt, item) => {
-        let Amount = TaxAmt + item.TaxAmount;
+        let Amount = TaxAmt + item.TaxesAmount;
         this.Tax = Amount;
         return Amount;
       }, 0);
     },
     wholeAmount() {
-       let GA = this.PurchaseOrder.OrderGrossAmount;
+      let GA = this.PurchaseOrder.OrderGrossAmount;
       let disc = this.PurchaseOrder.DiscPrct / 100;
-       let discAmount = GA * disc;
-      let netamount =  GA + this.Tax - discAmount;
-      
+      let DiscAmount = GA * disc;
+      let discAmount = DiscAmount;
+      let Netamount = GA + this.Tax - DiscAmount;
+      let netamount = Netamount;
       return {
         GA,
         netamount,
         disc,
-        discAmount
-      }
-    }
-
+        discAmount,
+      };
+    },
   },
   methods: {
     DateFormat() {
-      if(this.PurchaseOrder.Due !="")
-      {
+      if (this.PurchaseOrder.Due != "") {
         let someDate = new Date(this.PurchaseOrder.Date);
-        let DT = someDate.setDate(someDate.getDate() + this.PurchaseOrder.Due)
+        let DT = someDate.setDate(someDate.getDate() + this.PurchaseOrder.Due);
         let Formtted_Date = new Date(DT).toJSON().slice(0, 10);
         this.PurchaseOrder.DueDate = Formtted_Date;
-      }
-      else{
-          let someDate = new Date().toJSON().slice(0, 10);
-          this.PurchaseOrder.DueDate = someDate;
+      } else {
+        let someDate = new Date().toJSON().slice(0, 10);
+        this.PurchaseOrder.DueDate = someDate;
       }
     },
     RateAmt() {
       let Amt = this.PurchaseOrderDetail.Qty * this.PurchaseOrderDetail.Rate;
-      console.warn(Amt);
       this.PurchaseOrderDetail.Amount = Amt;
       this.PurchaseOrderDetail.Dollar = Amt;
     },
@@ -449,8 +486,8 @@ export default {
       var ObjPurchase = {
         SrNo: PurchaseData.SrNo,
         Name: PurchaseData.Name,
-        Rate: PurchaseData.Rate,
         Qty: PurchaseData.Qty,
+        Rate: PurchaseData.Rate,
         Amount: PurchaseData.Amount,
         Dollar: PurchaseData.Amount,
       };
@@ -462,57 +499,61 @@ export default {
       this.PurchaseOrderDetail.Amount = "";
     },
     RemovePOD(event) {
-      console.warn(this.purchaseData.indexOf(event), 1);
       this.purchaseData.splice(this.purchaseData.indexOf(event), 1);
     },
     AddTax() {
       let TaxData = JSON.parse(JSON.stringify(this.Taxation));
       var ObjTax = {
         SrNo: TaxData.SrNo,
-        TaxName: TaxData.TaxName,
-        TaxPer: TaxData.TaxPer,
-        TaxAmount: TaxData.TaxAmount,
+        TaxesName: TaxData.TaxesName,
+        TaxesPrct: TaxData.TaxesPrct,
+        TaxesAmount: TaxData.TaxesAmount,
       };
       this.taxData.push(ObjTax);
       this.Taxation.SrNo++;
-      this.Taxation.TaxName = "";
-      this.Taxation.TaxPer = "";
-      this.Taxation.TaxAmount = "";
+      this.Taxation.TaxesName = "";
+      this.Taxation.TaxesPrct = "";
+      this.Taxation.TaxesAmount = "";
     },
     RemoveTax(event) {
-      console.warn(this.taxData.indexOf(event), 1);
       this.taxData.splice(this.taxData.indexOf(event), 1);
     },
     Disc() {
       let GA = this.PurchaseOrder.OrderGrossAmount;
       let disc = this.PurchaseOrder.DiscPrct / 100;
-      console.warn("GrossAmount=>", GA);
-      console.warn("Disc=>", disc);
       let DiscAmt = GA * disc;
-      // this.Discount = DiscAmount;
       this.PurchaseOrder.DiscAmount = DiscAmt;
       this.PurchaseOrder.DiscDollar = DiscAmt;
     },
     TaxCal() {
       let GA = this.PurchaseOrder.OrderGrossAmount;
-      let taxper = this.Taxation.TaxPer;
+      let taxper = this.Taxation.TaxesPrct;
       let taxcal = (GA * taxper) / 100;
-      this.Taxation.TaxAmount = taxcal;
+      this.Taxation.TaxesAmount = taxcal;
       let netamount = taxcal + GA;
       this.PurchaseOrder.NetAmount = netamount;
       this.PurchaseOrder.NetDollar = netamount;
     },
-    async ajaxChangeEvent(val) {
-      console.log('ajaxChangeEvent = >', val.text);
+    async CurrencyChangeEvent(val) {
       let ConRate = await Service.GetAllConversionCurrencyRates(val.text);
       let Rate = ConRate.data;
-      this.PurchaseOrder.CurrencyId = Rate.conversionCurrencyRates;
-      // alert(val);
+      console.warn(Rate);
+      this.PurchaseOrder.CurrencyId = Rate.code;
+      this.PurchaseOrder.CurrencyCode = Rate.conversionCurrencyRates;
     },
-    ajaxSelectEvent({ text }) {
-      let Get = Service.GetAllConversionCurrencyRates(text);
-      console.warn(Get.data.data);
+    AccountChangeEvent(val){
+      this.PurchaseOrder.AccountId = val.id;
     },
+    AddPurchorders(){
+    const Data = {
+      ObjPurchaseOrder: JSON.parse(JSON.stringify(this.PurchaseOrder)),
+      ObjPurchaseOrderDetail: JSON.parse(JSON.stringify(this.purchaseData)),
+      ObjPurchaseOrderTaxesDetail: JSON.parse(JSON.stringify(this.taxData)),
+    };
+    console.warn(Data);
+      let AddPurchOrder = Service.AddPurchaseOrder(Data);
+      console.warn("Data",AddPurchOrder);
+    }
   },
 };
 </script>
