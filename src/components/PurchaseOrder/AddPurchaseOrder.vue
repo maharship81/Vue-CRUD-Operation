@@ -422,20 +422,6 @@ export default {
       purchaseData: [],
       taxData: [],
 
-      // AccountOptions: [],
-      // Account: {
-      //   url: "https://localhost:44362/Api/v1/Login/GetLogin",
-      //   processResults: function (data) {
-      //     // Tranforms the top-level key of the response object from 'items' to 'results'
-      //     return {
-      //       results: data.data.map((x) => {
-      //         return { id: x.code, text: x.firstName };
-      //       }),
-      //     };
-      //   },
-      // },
-      // AccountOptionsSelected: null,
-
       searchQuery: "",
       selectedItem: null,
       isVisible: false,
