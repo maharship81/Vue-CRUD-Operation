@@ -1,7 +1,9 @@
 <template>
   <Header />
   <div class="Header">
-    <button class="btn btn-primary" v-on:click="AddPurchorders"><fa icon="floppy-disk"/> AddPurchaseOrder</button>
+    <button class="btn btn-primary" v-on:click="AddPurchorders">
+      <fa icon="floppy-disk" /> AddPurchaseOrder
+    </button>
   </div>
   <div class="container-fluid">
     <div class="form-inline PurchaseOrder">
@@ -44,25 +46,41 @@
       </div>
       <div class="form-group">
         <div><label>Account</label></div>
-        <Select2
-          v-model="AccountOptionsSelected"
-          :options="AccountOptions"
-          :settings="{
-            placeholder: 'Specifies the placeholder through settings',
-            ajax: Account
-          }"
-          @select="AccountChangeEvent($event)"
-          class="Account"
-        />
+        <div class="dropdown-wrapper">
+          <div @click="isVisible = !isVisible" class="selected-item">
+            <span>SelectItems</span> &nbsp;
+            <p v-if="isVisible">
+              <fa icon="angle-down" />
+            </p>
+            <p v-else>
+              <fa icon="angle-up" />
+            </p>
+          </div>
+          <div v-if="isVisible" class="dropdown-popover">
+            <input
+              v-model="searchQuery"
+              id="Search"
+              type="text"
+              placeholder="Search For Account"
+            />
+            <div class="options">
+              <ul class="ul">
+                <li v-for="account in filterAccount" :key="account.code">
+                  {{ account.firstName }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-       <div class="form-group">
+      <div class="form-group">
         <div><label>Currency</label></div>
         <Select2
           v-model="CurrencyptionsSelected"
           :options="CurrencyOptions"
           :settings="{
             placeholder: 'Specifies the placeholder through settings',
-            ajax: Currency
+            ajax: Currency,
           }"
           @select="CurrencyChangeEvent($event)"
           class="Currency"
@@ -128,7 +146,9 @@
         />
       </div>
       <div class="form-group">
-        <button class="AddPOD btn btn-primary" v-on:click="AddPOD"><fa icon="plus"/></button>
+        <button class="AddPOD btn btn-primary" v-on:click="AddPOD">
+          <fa icon="plus" />
+        </button>
       </div>
       <div>
         <table class="table">
@@ -151,7 +171,7 @@
               <td>{{ item.Amount }}</td>
               <td>
                 <button class="btn btn-danger" v-on:click="RemovePOD(event)">
-                  <fa icon="trash"/>
+                  <fa icon="trash" />
                 </button>
               </td>
             </tr>
@@ -205,7 +225,7 @@
             </div>
             <div class="form-group">
               <button class="TaxBtn btn btn-primary" v-on:click="AddTax">
-                <fa icon="plus"/>
+                <fa icon="plus" />
               </button>
             </div>
             <div>
@@ -230,7 +250,7 @@
                         class="btn btn-danger"
                         v-on:click="RemoveTax(index)"
                       >
-                        <fa icon="trash"/>
+                        <fa icon="trash" />
                       </button>
                     </td>
                   </tr>
@@ -402,19 +422,24 @@ export default {
       purchaseData: [],
       taxData: [],
 
-      AccountOptions: [],
-      Account: {
-        url: "https://localhost:44362/Api/v1/Login/GetLogin",
-        processResults: function (data) {
-          // Tranforms the top-level key of the response object from 'items' to 'results'
-          return {
-            results: data.data.map((x) => {
-              return { id: x.code, text: x.firstName };
-            }),
-          };
-        },
-      },
-      AccountOptionsSelected: null,
+      // AccountOptions: [],
+      // Account: {
+      //   url: "https://localhost:44362/Api/v1/Login/GetLogin",
+      //   processResults: function (data) {
+      //     // Tranforms the top-level key of the response object from 'items' to 'results'
+      //     return {
+      //       results: data.data.map((x) => {
+      //         return { id: x.code, text: x.firstName };
+      //       }),
+      //     };
+      //   },
+      // },
+      // AccountOptionsSelected: null,
+
+      searchQuery: "",
+      selectedItem: null,
+      isVisible: false,
+      AccountArray: [],
 
       CurrencyOptions: [],
       Currency: {
@@ -432,6 +457,17 @@ export default {
     };
   },
   computed: {
+    filterAccount() {
+      const Query = this.searchQuery.toLowerCase();
+      if (this.searchQuery == "") {
+        return this.AccountArray;
+      }
+      return this.AccountArray.filter((Account) => {
+        return Object.values(Account).some((word) =>
+          String(word).toLowerCase().includes(Query)
+        );
+      });
+    },
     GrossAmt() {
       return this.purchaseData.reduce((GrossAmt, item) => {
         let Amount = GrossAmt + item.Amount;
@@ -463,6 +499,14 @@ export default {
         discAmount,
       };
     },
+  },
+  mounted() {
+    fetch("https://localhost:44362/Api/v1/Login/GetLogin")
+      .then((res) => res.json())
+      .then((json) => {
+        console.warn(json.data);
+        this.AccountArray = json.data;
+      });
   },
   methods: {
     DateFormat() {
@@ -541,19 +585,19 @@ export default {
       this.PurchaseOrder.CurrencyId = Rate.code;
       this.PurchaseOrder.CurrencyCode = Rate.conversionCurrencyRates;
     },
-    AccountChangeEvent(val){
+    AccountChangeEvent(val) {
       this.PurchaseOrder.AccountId = val.id;
     },
-    AddPurchorders(){
-    const Data = {
-      ObjPurchaseOrder: JSON.parse(JSON.stringify(this.PurchaseOrder)),
-      ObjPurchaseOrderDetail: JSON.parse(JSON.stringify(this.purchaseData)),
-      ObjPurchaseOrderTaxesDetail: JSON.parse(JSON.stringify(this.taxData)),
-    };
-    console.warn(Data);
+    AddPurchorders() {
+      const Data = {
+        ObjPurchaseOrder: JSON.parse(JSON.stringify(this.PurchaseOrder)),
+        ObjPurchaseOrderDetail: JSON.parse(JSON.stringify(this.purchaseData)),
+        ObjPurchaseOrderTaxesDetail: JSON.parse(JSON.stringify(this.taxData)),
+      };
+      console.warn(Data);
       let AddPurchOrder = Service.AddPurchaseOrder(Data);
-      console.warn("Data",AddPurchOrder);
-    }
+      console.warn("Data", AddPurchOrder);
+    },
   },
 };
 </script>
